@@ -1,0 +1,1 @@
+# Anti-AdBlocker-Fuckoff-userscript

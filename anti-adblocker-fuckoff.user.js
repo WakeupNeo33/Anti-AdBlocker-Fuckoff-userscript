@@ -90,7 +90,6 @@
     var disable_pattern = /kapat|disabl|désactiv|desactiv|desativ|deaktiv|detect|enabled|turned off|turn off|&#945;&#960;&#949;&#957;&#949;&#961;&#947;&#959;&#960;&#959;&#943;&#951;&#963;&#951;|&#1079;&#1072;&#1087;&#1088;&#1077;&#1097;&#1072;&#1090;&#1100;|állítsd le|publicités|рекламе|verhindert|advert|kapatınız/i;
 
     var is_core_protected = false;
-    var is_anti_adblock = false;
     var protect_body = false;
 
     // HELPER Functions
@@ -141,6 +140,13 @@
             el.className += ' ' + name;
         }
         return '.' + name + ',';
+    }
+
+    const enableContextMenu = () => {
+        window.addEventListener('contextmenu', (event) => {
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+        }, true);
     }
 
     function protectCore() {
@@ -201,6 +207,9 @@
 
             // Remove Blur FX of Elements
             addStyle( '* { -webkit-filter: blur(0px) !important; filter: blur(0px) !important; }' );
+
+            // enable context menu again
+            enableContextMenu();
         }
     }
 

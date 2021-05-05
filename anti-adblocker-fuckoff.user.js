@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            Anti-AdBlocker Fuckoff
 // @namespace       Anti-AdBlocker-Fuckoff
-// @version         1.3
+// @version         1.4
 // @description     Remove Anti-AdBlock & DeBlocker
 // @author          Elwyn
 // @license         MIT
@@ -141,7 +141,8 @@
         }
         return '.' + name + ',';
     }
-
+    
+    /* Thanks to RuiGuilherme  */
     const enableContextMenu = () => {
         window.addEventListener('contextmenu', (event) => {
             event.stopPropagation();

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            Anti-AdBlocker Fuckoff
 // @namespace       Anti-AdBlocker-Fuckoff
-// @version         1.4
+// @version         1.4.1
 // @description     Remove Anti-AdBlock & DeBlocker
 // @author          Elwyn
 // @license         MIT
@@ -23,7 +23,7 @@
     if ( window.location !== window.parent.location ) return;
 
     // Exclude domains
-    var excluded_Domains = [
+    var excluded_domains = [
 	'360.cn',
 	'adblockplus.org',
 	'agar.io',
@@ -49,6 +49,8 @@
 	'greasyfork.org',
 	'ghacks.net',
 	'google.',
+	'github.com',
+	'gitlab.com',
 	'imdb.com',
 	'imgbox.com',
 	'imgur.com',
@@ -61,6 +63,7 @@
 	'minds.com',
 	'microsoft.com',
 	'msn.com',
+	'odysee.com',
 	'openuserjs.org',
 	'pandoon.info',
 	'paypal.com',
@@ -83,7 +86,7 @@
 	'youtube.com',
 	'vod.pl'
 	];
-    if ( new RegExp( excluded_Domains.join('|').replace(/\./g,'\.') ).test( location.host ) ) return;
+    if ( new RegExp( excluded_domains.join('|').replace(/\./g,'\.') ).test( location.host ) ) return;
 	
     // AdBlock Pattern to Search
     var adblock_pattern = /ad-block|adblock|ad block|bloqueur|bloqueador|Werbeblocker|&#1570;&#1583;&#1576;&#1604;&#1608;&#1603; &#1576;&#1604;&#1587;|блокировщиком/i;

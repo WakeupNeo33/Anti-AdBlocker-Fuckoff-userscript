@@ -1,6 +1,6 @@
-# Anti-AdBlocker-Fuckoff-userscript
+# Anti-AdBlocker-Fuckoff-userscript v1.5
 
-Remove Anti-AdBlock & DeBlocker
+Protects from Anti-AdBlockers & DeBlocker
 
 ![Image](https://github.com/WakeupNeo33/Anti-AdBlocker-Fuckoff-userscript/raw/main/icon.png)
 

@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name            Anti-AdBlocker Fuckoff
 // @namespace       Anti-AdBlocker-Fuckoff
-// @version         1.4.1
-// @description     Remove Anti-AdBlock & DeBlocker
+// @version         1.5
+// @description     Protects from Anti-AdBlockers & DeBlocker
 // @author          Elwyn
 // @license         MIT
 // @homepage        https://github.com/WakeupNeo33/Anti-AdBlocker-Fuckoff-userscript
@@ -16,7 +16,7 @@
 // @grant           unsafeWindow
 // ==/UserScript==
 (function() {
-	
+
 	var enable_debug = false;
 
     // Skip iframes
@@ -87,13 +87,12 @@
 	'vod.pl'
 	];
     if ( new RegExp( excluded_domains.join('|').replace(/\./g,'\.') ).test( location.host ) ) return;
-	
+
     // AdBlock Pattern to Search
     var adblock_pattern = /ad-block|adblock|ad block|bloqueur|bloqueador|Werbeblocker|&#1570;&#1583;&#1576;&#1604;&#1608;&#1603; &#1576;&#1604;&#1587;|блокировщиком/i;
     var disable_pattern = /kapat|disabl|désactiv|desactiv|desativ|deaktiv|detect|enabled|turned off|turn off|&#945;&#960;&#949;&#957;&#949;&#961;&#947;&#959;&#960;&#959;&#943;&#951;&#963;&#951;|&#1079;&#1072;&#1087;&#1088;&#1077;&#1097;&#1072;&#1090;&#1100;|állítsd le|publicités|рекламе|verhindert|advert|kapatınız/i;
 
     var is_core_protected = false;
-    var protect_body = false;
 
     // HELPER Functions
     //-----------------
@@ -144,7 +143,7 @@
         }
         return '.' + name + ',';
     }
-    
+
     /* Thanks to RuiGuilherme  */
     const enableContextMenu = () => {
         window.addEventListener('contextmenu', (event) => {
@@ -161,7 +160,7 @@
         let $_removeChild = unsafeWindow.Node.prototype.removeChild;
         unsafeWindow.Node.prototype.removeChild = function( node ) {
             if ( node.tagName == 'HEAD' || node.tagName == 'BODY' ) return;
-            if ( protect_body && node.parentNode.tagName == 'BODY' ) return;
+            if ( node.parentNode.tagName == 'HEAD' || node.parentNode.tagName == 'BODY' ) return;
             $_removeChild.apply( this, arguments );
         };
         let $_innerHTML = unsafeWindow.Node.prototype.innerHTML;
@@ -280,14 +279,7 @@
             subtree : true
         });
 
-        let body_style = window.getComputedStyle( document.body );
-        document.body.style.visibility = 'hidden';
-        if ( body_style.getPropertyValue( 'visibility' ) == 'visible' )
-        {
-            protect_body = true;
-            protectCore();
-        }
-        document.body.style.visibility = 'visible';
+        protectCore();
 
     },false);
 

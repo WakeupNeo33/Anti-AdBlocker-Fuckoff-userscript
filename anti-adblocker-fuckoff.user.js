@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            Anti-AdBlocker Fuckoff
 // @namespace       Anti-AdBlocker-Fuckoff
-// @version         1.5
+// @version         1.5.1
 // @description     Protects from Anti-AdBlockers & DeBlocker
 // @author          Elwyn
 // @license         MIT
@@ -11,6 +11,66 @@
 // @updateURL       https://github.com/WakeupNeo33/Anti-AdBlocker-Fuckoff-userscript/raw/main/anti-adblocker-fuckoff.user.js
 // @iconURL         https://github.com/WakeupNeo33/Anti-AdBlocker-Fuckoff-userscript/raw/main/icon.png
 // @include         *
+// @exclude         https://*360.cn/*
+// @exclude         https://*adblockplus.org/*
+// @exclude         https://*agar.io/*
+// @exclude         https://*aliexpress.com/*
+// @exclude         https://*amazon.*/*
+// @exclude         https://*anaconda.org/*
+// @exclude         https://*apple.com/*
+// @exclude         https://*ask.com/*
+// @exclude         https://*baidu.com/*
+// @exclude         https://*bing.com/*
+// @exclude         https://*buffer.com/*
+// @exclude         https://*bufferapp.com/*
+// @exclude         https://*calm.com/*
+// @exclude         https://*chatango.com/*
+// @exclude         https://*dolldivine.com/*
+// @exclude         https://*duckduckgo.com/*
+// @exclude         https://*ebay.com/*
+// @exclude         https://*facebook.com/*
+// @exclude         https://*flattr.com/*
+// @exclude         https://*flickr.com/*
+// @exclude         https://*fsf.org/*
+// @exclude         https://*geeksforgeeks.org/*
+// @exclude         https://*ghacks.net/*
+// @exclude         https://*github.com/*
+// @exclude         https://*gitlab.com/*
+// @exclude         https://*google.*
+// @exclude         https://*greasyfork.org/*
+// @exclude         https://*imdb.com/*
+// @exclude         https://*imgbox.com/*
+// @exclude         https://*imgur.com/*
+// @exclude         https://*instagram.com/*
+// @exclude         https://*jsbin.com/*
+// @exclude         https://*jsfiddle.net/*
+// @exclude         https://*linkedin.com/*
+// @exclude         https://*live.com/*
+// @exclude         https://*mail.ru/*
+// @exclude         https://*minds.com/*
+// @exclude         https://*microsoft.com/*
+// @exclude         https://*msn.com/*
+// @exclude         https://*odysee.com/*
+// @exclude         https://*openuserjs.org/*
+// @exclude         https://*pandoon.info/*
+// @exclude         https://*paypal.com/*
+// @exclude         https://*pinterest.com/*
+// @exclude         http*://*plnkr.co/*
+// @exclude         https://*popmech.ru/*
+// @exclude         https://*qq.com/*
+// @exclude         https://*reddit.com/*
+// @exclude         https://*stackoverflow.com/*
+// @exclude         https://*tampermonkey.net/*
+// @exclude         https://*trello.com/*
+// @exclude         https://*twitch.tv/*
+// @exclude         https://*twitter.com/*
+// @exclude         https://*vimeo.com/*
+// @exclude         https://*wikipedia.org/*
+// @exclude         https://*w3schools.com/*
+// @exclude         https://*yahoo.*
+// @exclude         https://*yandex.ru/*
+// @exclude         https://*youtube.com/*
+// @exclude         https://*vod.pl/*
 // @noframes
 // @run-at          document-start
 // @grant           unsafeWindow
@@ -22,77 +82,17 @@
     // Skip iframes
     if ( window.location !== window.parent.location ) return;
 
-    // Exclude domains
-    var excluded_domains = [
-	'360.cn',
-	'adblockplus.org',
-	'agar.io',
-	'aliexpress.com',
-	'amazon.',
-	'apple.com',
-	'ask.com',
-	'baidu.com',
-	'bing.com',
-	'bufferapp.com',
-	'calm.com',
-	'chatango.com',
-	'chromeactions.com',
-	'dolldivine.com',
-	'duckduckgo.com',
-	'easyinplay.net',
-	'ebay.com',
-	'exacttarget.com',
-	'facebook.com',
-	'flattr.com',
-	'flickr.com',
-	'fsf.org',
-	'greasyfork.org',
-	'ghacks.net',
-	'google.',
-	'github.com',
-	'gitlab.com',
-	'imdb.com',
-	'imgbox.com',
-	'imgur.com',
-	'instagram.com',
-	'jsbin.com',
-	'jsfiddle.net',
-	'linkedin.com',
-	'live.com',
-	'mail.ru',
-	'minds.com',
-	'microsoft.com',
-	'msn.com',
-	'odysee.com',
-	'openuserjs.org',
-	'pandoon.info',
-	'paypal.com',
-	'pinterest.com',
-	'plnkr.co',
-	'popmech.ru',
-	'preloaders.net',
-	'qq.com',
-	'reddit.com',
-	'stackoverflow.com',
-	'tampermonkey.net',
-	'twitter.com',
-	'vimeo.com',
-	'wikipedia.org',
-	'w3schools.com',
-	'xemvtv.net',
-	'yahoo.',
-	'yandex.ru',
-	'youtu.be',
-	'youtube.com',
-	'vod.pl'
-	];
-    if ( new RegExp( excluded_domains.join('|').replace(/\./g,'\.') ).test( location.host ) ) return;
-
     // AdBlock Pattern to Search
     var adblock_pattern = /ad-block|adblock|ad block|bloqueur|bloqueador|Werbeblocker|&#1570;&#1583;&#1576;&#1604;&#1608;&#1603; &#1576;&#1604;&#1587;|блокировщиком/i;
     var disable_pattern = /kapat|disabl|désactiv|desactiv|desativ|deaktiv|detect|enabled|turned off|turn off|&#945;&#960;&#949;&#957;&#949;&#961;&#947;&#959;&#960;&#959;&#943;&#951;&#963;&#951;|&#1079;&#1072;&#1087;&#1088;&#1077;&#1097;&#1072;&#1090;&#1100;|állítsd le|publicités|рекламе|verhindert|advert|kapatınız/i;
 
+    var tagNames_pattern = /a|b|center|div|h1|h2|h3|h4|h5|h6|i|font|s|span|strong|p|q|u/i;
+
     var is_core_protected = false;
+    var is_blackout_checked = false;
+
+    var classes = [];
+
 
     // HELPER Functions
     //-----------------
@@ -107,9 +107,9 @@
     }
 
     function addStyle(str) {
-        var node = document.createElement('style');
-        node.innerHTML = str;
-        document.body.appendChild(node);
+        var style = document.createElement('style');
+        style.innerHTML = str;
+        document.body.appendChild( style );
     }
 
     function randomInt( min, max )
@@ -141,7 +141,9 @@
         } else {
             el.className += ' ' + name;
         }
-        return '.' + name + ',';
+        //return '.' + name + ',';
+        classes.push( name );
+        return '.' + name;
     }
 
     /* Thanks to RuiGuilherme  */
@@ -179,12 +181,15 @@
                 return $_innerHTML_set.call(this, value);
             }
         });
+        debug( 'Core Protected');
     }
 
     // Main Functions
     function removeBlackout( el )
     {
-        var classes = '';
+        if ( is_blackout_checked ) return;
+        is_blackout_checked = true;
+
         document.querySelectorAll( 'a,b,center,div,h1,h2,h3,h4,h5,h6,i,font,s,span,strong,p,q,u' ).forEach( ( el ) => {
             let style = window.getComputedStyle( el );
             let height, width;
@@ -194,60 +199,59 @@
                 width = style.getPropertyValue( 'width' );
                 if ( ( height == '100%' && width == '100%' ) || ( parseInt( height ) > window.innerHeight - 100 && parseInt( width ) > window.innerWidth - 100 ) )
                 {
-                    classes += includeElement( el );
+                    debug( 'Blackout Removed! ' + el.className );
+                    removeModal( el );
+                    // Remove Blur FX of Elements
+                    addStyle( 'div { -webkit-filter: blur(0px) !important; filter: blur(0px) !important; }' );
+                    // enable context menu again
+                    enableContextMenu();
                 }
             }
         });
 
-        if ( classes.length > 0 ) {
+    }
 
-            classes = classes.substring( 0, classes.length - 1 );
-
-            debug( 'Blackout classes:' + classes );
-
-            // Hide Anti-AdBlocker Blackout Elements
-            addStyle( classes + '{ display: none !important; }' );
-
-            // Remove Blur FX of Elements
-            addStyle( '* { -webkit-filter: blur(0px) !important; filter: blur(0px) !important; }' );
-
-            // enable context menu again
-            enableContextMenu();
-        }
+    function removeCurrentModal()
+    {
+        document.querySelectorAll( 'a,b,center,div,h1,h2,h3,h4,h5,h6,i,font,s,span,strong,p,q,u' ).forEach( ( el ) => {
+           if ( el.innerText.length < 1 ) return;
+           if ( adblock_pattern.test( el.innerText ) && disable_pattern.test( el.innerText ) )
+           {
+                removeModal( el );
+           }
+        });
     }
 
     function removeModal( el )
     {
-        debug( 'AntiAdBlocker Found!');
+        var className = '';
 
-        var classes = '';
-
-        // Holder of the Modal message
+        // Find the main Holder of the Modal message
         for (;;) {
-            classes += includeElement( el );
             if ( el.parentNode.tagName == 'BODY' || el.parentNode.tagName == 'HEAD' ) break;
             el = el.parentNode;
         }
 
-        if ( classes.length > 0 ) {
-
-            classes = classes.substring( 0, classes.length - 1 );
-
-            debug( 'Modal classes:' + classes );
-
-            // Hide Anti-AdBlocker Modal Elements
-            addStyle( classes + '{ display: none !important; }' );
-
-            // Blackout Elements
-            removeBlackout();
-
-            // Blocks the possibility of being able to remove the BODY or the HEAD
-            protectCore();
+        if ( (new RegExp(classes.join('|'))).test( el.className ) ) {
+            debug( 'Modal Included: ' + el.className );
+            return;
         }
+
+        debug( 'AntiAdBlocker Found!');
+
+        // Blackout Elements
+        removeBlackout();
+
+        className = includeElement( el );
+
+        // Hide Anti-AdBlocker Modal Elements
+        addStyle( className + '{ display: none !important; }' );
+
+        debug( 'Modal Removed!: ' + el.className );
 
     }
 
-
+    classes.push( getRandomName() );
 
     document.addEventListener('DOMContentLoaded', function() {
 
@@ -261,10 +265,11 @@
                     Array.prototype.forEach.call( mutation.addedNodes, (addedNode) => {
                         // skip nodes with undefined text
                         if ( typeof addedNode.innerText == 'undefined' ) return;
+                        if ( !tagNames_pattern.test ( addedNode.tagName ) ) return;
                         // skip nodes without text
                         if ( addedNode.innerText.length < 1 ) return;
                         // search texts that ask to deactivate the AdBlock
-                        // debug( addedNode.innerText );
+                        //debug( addedNode.innerText );
                         if ( adblock_pattern.test( addedNode.innerText ) && disable_pattern.test( addedNode.innerText ) )
                         {
                             removeModal( addedNode );
@@ -278,6 +283,8 @@
             childList : true,
             subtree : true
         });
+
+        removeCurrentModal();
 
         protectCore();
 

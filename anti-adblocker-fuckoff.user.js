@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            Anti-AdBlocker Fuckoff
 // @namespace       Anti-AdBlocker-Fuckoff
-// @version         1.5.2
+// @version         1.5.3
 // @description     Protects from Anti-AdBlockers & DeBlocker
 // @author          Elwyn
 // @license         MIT
@@ -86,6 +86,8 @@
 
     var classes = [];
 
+    var initModalFound = false;
+
 
     // HELPER Functions
     //-----------------
@@ -128,12 +130,8 @@
     }
 
     function addRandomClass( el ) {
-        var name = getRandomName();
-        if ( el.className.length == 0 ) {
-            el.className = name;
-        } else {
-            el.className += ' ' + name;
-        }
+        let name = getRandomName();
+        el.classList.add( name );
         return name;
     }
 
@@ -151,21 +149,21 @@
         // Protect RemoveChild
         // Blocks the possibility of being able to remove the BODY or the HEAD
 
-        let $_removeChild = unsafeWindow.Node.prototype.removeChild;
+        var $_removeChild = unsafeWindow.Node.prototype.removeChild;
         unsafeWindow.Node.prototype.removeChild = function( node ) {
             if ( node.tagName == 'HEAD' || node.parentNode.tagName == 'HEAD' || node.tagName == 'BODY' ) return;
             if ( node.parentNode == document.body.firstElementChild ) return;
             $_removeChild.apply( this, arguments );
         };
 
-        let $_innerHTML = unsafeWindow.Node.prototype.innerHTML;
+        var $_innerHTML = unsafeWindow.Node.prototype.innerHTML;
         unsafeWindow.Node.prototype.innerHTML = function( node ) {
             if ( node.tagName == 'HEAD' || node.tagName == 'BODY' ) return;
             $_innerHTML.apply( this, arguments );
         };
 
         // Protect innerHTML
-        let $_innerHTML_set = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML').set;
+        var $_innerHTML_set = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML').set;
 
         Object.defineProperty(Element.prototype, 'innerHTML', {
             set: function (value) {
@@ -180,26 +178,26 @@
 
     function isElementBlur( el )
     {
-        let style = window.getComputedStyle( el );
-        let filter = style.getPropertyValue( 'filter' );
+        var style = window.getComputedStyle( el );
+        var filter = style.getPropertyValue( 'filter' );
         return ( (/blur/i).test( filter ) );
     }
 
     function isElementFixed( el )
     {
-        let style = window.getComputedStyle( el );
+        var style = window.getComputedStyle( el );
         return ( style.getPropertyValue( 'position' ) == 'fixed' );
     }
 
     function isBlackoutModal( el )
     {
-        let style = window.getComputedStyle( el );
-        let position = style.getPropertyValue( 'position' );
-        let top = parseInt( style.getPropertyValue( 'top' ) );
-        let left = parseInt( style.getPropertyValue( 'left' ) );
-        let right = parseInt( style.getPropertyValue( 'right' ) );
-        let bottom = parseInt( style.getPropertyValue( 'bottom' ) );
-        let zindex = style.getPropertyValue( 'z-index' );
+        var style = window.getComputedStyle( el );
+        var position = style.getPropertyValue( 'position' );
+        var top = parseInt( style.getPropertyValue( 'top' ) );
+        var left = parseInt( style.getPropertyValue( 'left' ) );
+        var right = parseInt( style.getPropertyValue( 'right' ) );
+        var bottom = parseInt( style.getPropertyValue( 'bottom' ) );
+        var zindex = style.getPropertyValue( 'z-index' );
         if ( isNaN( zindex ) ) zindex = 0;
         return parseInt( zindex ) > 1 && position == 'fixed' && ( ( el.offsetHeight > window.innerHeight - 50 && el.offsetWidth > window.innerWidth - 20 ) || (top == 0 && left == 0 && right == 0 && bottom == 0) );
     }
@@ -211,12 +209,12 @@
         document.querySelectorAll( 'div,span,section,p' ).forEach( ( el ) => {
             if ( isBlackoutModal( el ) )
             {
-                debug( 'Blackout Removed! ' + el.className );
+                debug( 'Blackout Removed! ' + el.classList );
                 removeModal( el );
             }
             if ( isElementBlur( el ) )
             {
-                var className = addRandomClass( el );
+                let className = addRandomClass( el );
                 classes.push( className );
                 addStyle( '.' + className + '{ -webkit-filter: blur(0px) !important; filter: blur(0px) !important; }' );
             }
@@ -225,12 +223,14 @@
 
     function removeCurrentModal()
     {
+        if ( initModalFound ) return;
         document.querySelectorAll( 'div,span,section,p' ).forEach( ( el ) => {
-           if ( el.innerText.length < 1 ) return;
-           if ( adblock_pattern.test( el.innerText ) && disable_pattern.test( el.innerText ) )
+           if ( el.textContent.length < 1 ) return;
+           if ( adblock_pattern.test( el.textContent ) && disable_pattern.test( el.textContent ) )
            {
+               initModalFound = true;
                removeModal( el );
-               debug( 'CurrentModal: ' + el.innerText );
+               debug( 'CurrentModal: ' + el.textContent );
                return true;
            }
         });
@@ -242,7 +242,11 @@
         var modalFound = false;
 
         // Find the main Holder of the Modal message
-        for (;;) {
+        while ( el.tagName != 'BODY' ) {
+            if ( (new RegExp(classes.join('|'))).test( el.classList ) ) {
+                debug( 'Modal Included: ' + el.classList );
+                break;
+            }
             if ( isElementFixed ( el ) )
             {
                 modalFound = true;
@@ -253,11 +257,6 @@
 
         if ( modalFound )
         {
-            if ( (new RegExp(classes.join('|'))).test( el.className ) ) {
-                debug( 'Modal Included: ' + el.className );
-                return;
-            }
-
             debug( 'AntiAdBlocker Found!');
 
             className = addRandomClass( el );
@@ -266,7 +265,7 @@
             // Hide Anti-AdBlocker Modal Elements
             addStyle( '.' + className + '{ display: none !important; }' );
 
-            debug( 'Modal Removed!: ' + el.className );
+            debug( 'Modal Removed!: ' + el.classList );
 
             removeBlackout();
         }
@@ -285,14 +284,14 @@
                 if ( mutation.addedNodes.length ) {
                     Array.prototype.forEach.call( mutation.addedNodes, (addedNode) => {
                         // skip nodes with undefined text
-                        if ( typeof addedNode.innerText == 'undefined' ) return;
+                        if ( typeof addedNode.textContent == 'undefined' ) return;
                         if ( !tagNames_pattern.test ( addedNode.tagName ) ) return;
                         // skip nodes without text
-                        if ( addedNode.innerText.length < 1 ) return;
+                        if ( addedNode.textContent.length < 1 ) return;
                         // search texts that ask to deactivate the AdBlock
-                        if ( adblock_pattern.test( addedNode.innerText ) && disable_pattern.test( addedNode.innerText ) )
+                        if ( adblock_pattern.test( addedNode.textContent ) && disable_pattern.test( addedNode.textContent ) )
                         {
-                            debug( 'addedNode: ' + addedNode.innerText );
+                            debug( 'addedNode: ' + addedNode.textContent );
                             removeModal( addedNode );
                         }
                     });
@@ -305,8 +304,6 @@
             subtree : true
         });
 
-        removeCurrentModal();
-
         protectCore();
 
         // Remove Scroll Lock
@@ -314,6 +311,10 @@
 
         // enable context menu again
         enableContextMenu();
+
+        removeCurrentModal();
+
+        setTimeout( function() { removeCurrentModal(); }, 10 );
 
     },false);
 

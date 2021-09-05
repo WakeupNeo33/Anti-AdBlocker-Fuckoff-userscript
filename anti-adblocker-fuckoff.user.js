@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            Anti-AdBlocker Fuckoff
 // @namespace       Anti-AdBlocker-Fuckoff
-// @version         1.5.3
+// @version         1.5.4
 // @description     Protects from Anti-AdBlockers & DeBlocker
 // @author          Elwyn
 // @license         MIT
@@ -46,11 +46,13 @@
 // @exclude         https://*minds.com/*
 // @exclude         https://*microsoft.com/*
 // @exclude         https://*msn.com/*
+// @exclude         https://*netflix.com/*
 // @exclude         https://*odysee.com/*
 // @exclude         https://*openuserjs.org/*
 // @exclude         https://*paypal.com/*
 // @exclude         https://*pinterest.com/*
 // @exclude         http*://*plnkr.co/*
+// @exclude         https://*primevideo.com/*
 // @exclude         https://*qq.com/*
 // @exclude         https://*reddit.com/*
 // @exclude         https://*stackoverflow.com/*
@@ -59,6 +61,7 @@
 // @exclude         https://*twitch.tv/*
 // @exclude         https://*twitter.com/*
 // @exclude         https://*vimeo.com/*
+// @exclude         https://*whatsapp.com/*
 // @exclude         https://*wikipedia.org/*
 // @exclude         https://*w3schools.com/*
 // @exclude         https://*yahoo.*
@@ -80,13 +83,11 @@
     var adblock_pattern = /ad-block|adblock|ad block|bloqueur|bloqueador|Werbeblocker|&#1570;&#1583;&#1576;&#1604;&#1608;&#1603; &#1576;&#1604;&#1587;|блокировщиком/i;
     var disable_pattern = /kapat|disabl|désactiv|desactiv|desativ|deaktiv|detect|enabled|turned off|turn off|&#945;&#960;&#949;&#957;&#949;&#961;&#947;&#959;&#960;&#959;&#943;&#951;&#963;&#951;|&#1079;&#1072;&#1087;&#1088;&#1077;&#1097;&#1072;&#1090;&#1100;|állítsd le|publicités|рекламе|verhindert|advert|kapatınız/i;
 
-    var tagNames_pattern = /div|span|section|p/i;
+    var tagNames_pattern = /div|section|iframe/i;
 
     var is_core_protected = false;
 
     var classes = [];
-
-    var initModalFound = false;
 
 
     // HELPER Functions
@@ -203,72 +204,40 @@
     }
 
     // Main Functions
-    function removeBlackout( el )
+    function checkModals()
     {
-
-        document.querySelectorAll( 'div,span,section,p' ).forEach( ( el ) => {
-            if ( isBlackoutModal( el ) )
+        document.querySelectorAll( 'div,section,iframe' ).forEach( ( el ) => {
+            if ( isElementFixed ( el ) && ( (adblock_pattern.test( el.textContent ) && disable_pattern.test( el.textContent )) || isBlackoutModal( el ) ) )
             {
-                debug( 'Blackout Removed! ' + el.classList );
                 removeModal( el );
             }
-            if ( isElementBlur( el ) )
+            else if ( isElementBlur( el ) )
             {
-                let className = addRandomClass( el );
-                classes.push( className );
-                addStyle( '.' + className + '{ -webkit-filter: blur(0px) !important; filter: blur(0px) !important; }' );
+                el.classList.add( 'no_blur' );
             }
-        });
-    }
-
-    function removeCurrentModal()
-    {
-        if ( initModalFound ) return;
-        document.querySelectorAll( 'div,span,section,p' ).forEach( ( el ) => {
-           if ( el.textContent.length < 1 ) return;
-           if ( adblock_pattern.test( el.textContent ) && disable_pattern.test( el.textContent ) )
-           {
-               initModalFound = true;
-               removeModal( el );
-               debug( 'CurrentModal: ' + el.textContent );
-               return true;
-           }
         });
     }
 
     function removeModal( el )
     {
+        if ( (new RegExp(classes.join('|'))).test( el.classList ) ) return;
         var className = '';
-        var modalFound = false;
 
-        // Find the main Holder of the Modal message
-        while ( el.tagName != 'BODY' ) {
-            if ( (new RegExp(classes.join('|'))).test( el.classList ) ) {
-                debug( 'Modal Included: ' + el.classList );
-                break;
-            }
-            if ( isElementFixed ( el ) )
-            {
-                modalFound = true;
-                break;
-            }
-            el = el.parentNode;
-        }
+        debug( 'Modal Removed: ' + el.classList );
 
-        if ( modalFound )
-        {
-            debug( 'AntiAdBlocker Found!');
+        className = addRandomClass( el );
+        classes.push( className );
 
-            className = addRandomClass( el );
-            classes.push( className );
+        el.setAttribute('style', (el.getAttribute('style')||'') + ';display: none !important;');
+        addStyle( '.' + className + '{ display: none !important; }' );
+    }
 
-            // Hide Anti-AdBlocker Modal Elements
-            addStyle( '.' + className + '{ display: none !important; }' );
-
-            debug( 'Modal Removed!: ' + el.classList );
-
-            removeBlackout();
-        }
+    function unblockScroll()
+    {
+        document.body.setAttribute('style', (document.body.getAttribute('style')||'').replace('overflow: visible !important;','') + 'overflow: visible !important;');
+        document.body.classList.add( 'scroll_on' );
+        document.getElementsByTagName('html')[0].setAttribute('style', (document.getElementsByTagName('html')[0].getAttribute('style')||'').replace('overflow: visible !important;','') + 'overflow: visible !important;');
+        document.getElementsByTagName('html')[0].classList.add( 'scroll_on' );
     }
 
     classes.push( getRandomName() );
@@ -282,16 +251,16 @@
         var observer = new MutationObserver( (mutations) => {
             mutations.forEach( (mutation) => {
                 if ( mutation.addedNodes.length ) {
-                    Array.prototype.forEach.call( mutation.addedNodes, (addedNode) => {
+                    Array.prototype.forEach.call( mutation.addedNodes, ( el ) => {
                         // skip nodes with undefined text
-                        if ( typeof addedNode.textContent == 'undefined' ) return;
-                        if ( !tagNames_pattern.test ( addedNode.tagName ) ) return;
+                        //if ( typeof el.textContent == 'undefined' ) return;
+                        if ( !tagNames_pattern.test ( el.tagName ) ) return;
                         // skip nodes without text
-                        if ( addedNode.textContent.length < 1 ) return;
+                        //if ( el.textContent.length < 1 ) return;
                         // search texts that ask to deactivate the AdBlock
-                        if ( adblock_pattern.test( addedNode.textContent ) && disable_pattern.test( addedNode.textContent ) )
+                        if ( isElementFixed ( el ) && ( (adblock_pattern.test( el.textContent ) && disable_pattern.test( el.textContent )) || isBlackoutModal( el ) ) )
                         {
-                            debug( 'addedNode: ' + addedNode.textContent );
+                            debug( 'addedNode: ' + el.textContent );
                             removeModal( addedNode );
                         }
                     });
@@ -306,15 +275,18 @@
 
         protectCore();
 
-        // Remove Scroll Lock
-        addStyle( 'body { overflow: overlay !important; }' );
-
         // enable context menu again
         enableContextMenu();
 
-        removeCurrentModal();
+        checkModals();
 
-        setTimeout( function() { removeCurrentModal(); }, 10 );
+        setTimeout( function() {
+            checkModals();
+            unblockScroll();
+        }, 100 );
+
+        addStyle( '.no_blur { -webkit-filter: blur(0px) !important; filter: blur(0px) !important; }' );
+        addStyle( 'body.scroll_on, html.scroll_on { overflow: visible !important; }' );
 
     },false);
 

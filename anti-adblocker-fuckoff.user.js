@@ -1,19 +1,16 @@
 // ==UserScript==
 // @name            Anti-AdBlocker Fuckoff
 // @namespace       Anti-AdBlocker-Fuckoff
-// @version         1.5.1
+// @version         1.5.2
 // @description     Protects from Anti-AdBlockers & DeBlocker
 // @author          Elwyn
 // @license         MIT
 // @homepage        https://github.com/WakeupNeo33/Anti-AdBlocker-Fuckoff-userscript
-// @supportURL      https://greasyfork.org/es/scripts/397070-anti-adblocker-off/feedback
+// @supportURL      https://github.com/WakeupNeo33/Anti-AdBlocker-Fuckoff-userscript/issues
 // @downloadURL     https://github.com/WakeupNeo33/Anti-AdBlocker-Fuckoff-userscript/raw/main/anti-adblocker-fuckoff.user.js
 // @updateURL       https://github.com/WakeupNeo33/Anti-AdBlocker-Fuckoff-userscript/raw/main/anti-adblocker-fuckoff.user.js
 // @iconURL         https://github.com/WakeupNeo33/Anti-AdBlocker-Fuckoff-userscript/raw/main/icon.png
 // @include         *
-// @exclude         https://*360.cn/*
-// @exclude         https://*adblockplus.org/*
-// @exclude         https://*agar.io/*
 // @exclude         https://*aliexpress.com/*
 // @exclude         https://*amazon.*/*
 // @exclude         https://*anaconda.org/*
@@ -25,7 +22,6 @@
 // @exclude         https://*bufferapp.com/*
 // @exclude         https://*calm.com/*
 // @exclude         https://*chatango.com/*
-// @exclude         https://*dolldivine.com/*
 // @exclude         https://*duckduckgo.com/*
 // @exclude         https://*ebay.com/*
 // @exclude         https://*facebook.com/*
@@ -52,11 +48,9 @@
 // @exclude         https://*msn.com/*
 // @exclude         https://*odysee.com/*
 // @exclude         https://*openuserjs.org/*
-// @exclude         https://*pandoon.info/*
 // @exclude         https://*paypal.com/*
 // @exclude         https://*pinterest.com/*
 // @exclude         http*://*plnkr.co/*
-// @exclude         https://*popmech.ru/*
 // @exclude         https://*qq.com/*
 // @exclude         https://*reddit.com/*
 // @exclude         https://*stackoverflow.com/*
@@ -80,16 +74,15 @@
 	var enable_debug = false;
 
     // Skip iframes
-    if ( window.location !== window.parent.location ) return;
+    //if ( window.location !== window.parent.location ) return;
 
     // AdBlock Pattern to Search
     var adblock_pattern = /ad-block|adblock|ad block|bloqueur|bloqueador|Werbeblocker|&#1570;&#1583;&#1576;&#1604;&#1608;&#1603; &#1576;&#1604;&#1587;|блокировщиком/i;
     var disable_pattern = /kapat|disabl|désactiv|desactiv|desativ|deaktiv|detect|enabled|turned off|turn off|&#945;&#960;&#949;&#957;&#949;&#961;&#947;&#959;&#960;&#959;&#943;&#951;&#963;&#951;|&#1079;&#1072;&#1087;&#1088;&#1077;&#1097;&#1072;&#1090;&#1100;|állítsd le|publicités|рекламе|verhindert|advert|kapatınız/i;
 
-    var tagNames_pattern = /a|b|center|div|h1|h2|h3|h4|h5|h6|i|font|s|span|strong|p|q|u/i;
+    var tagNames_pattern = /div|span|section|p/i;
 
     var is_core_protected = false;
-    var is_blackout_checked = false;
 
     var classes = [];
 
@@ -134,16 +127,14 @@
         return name;
     }
 
-    function includeElement( el ) {
+    function addRandomClass( el ) {
         var name = getRandomName();
         if ( el.className.length == 0 ) {
             el.className = name;
         } else {
             el.className += ' ' + name;
         }
-        //return '.' + name + ',';
-        classes.push( name );
-        return '.' + name;
+        return name;
     }
 
     /* Thanks to RuiGuilherme  */
@@ -159,12 +150,14 @@
         is_core_protected = true;
         // Protect RemoveChild
         // Blocks the possibility of being able to remove the BODY or the HEAD
+
         let $_removeChild = unsafeWindow.Node.prototype.removeChild;
         unsafeWindow.Node.prototype.removeChild = function( node ) {
-            if ( node.tagName == 'HEAD' || node.tagName == 'BODY' ) return;
-            if ( node.parentNode.tagName == 'HEAD' || node.parentNode.tagName == 'BODY' ) return;
+            if ( node.tagName == 'HEAD' || node.parentNode.tagName == 'HEAD' || node.tagName == 'BODY' ) return;
+            if ( node.parentNode == document.body.firstElementChild ) return;
             $_removeChild.apply( this, arguments );
         };
+
         let $_innerHTML = unsafeWindow.Node.prototype.innerHTML;
         unsafeWindow.Node.prototype.innerHTML = function( node ) {
             if ( node.tagName == 'HEAD' || node.tagName == 'BODY' ) return;
@@ -181,43 +174,64 @@
                 return $_innerHTML_set.call(this, value);
             }
         });
+
         debug( 'Core Protected');
+    }
+
+    function isElementBlur( el )
+    {
+        let style = window.getComputedStyle( el );
+        let filter = style.getPropertyValue( 'filter' );
+        return ( (/blur/i).test( filter ) );
+    }
+
+    function isElementFixed( el )
+    {
+        let style = window.getComputedStyle( el );
+        return ( style.getPropertyValue( 'position' ) == 'fixed' );
+    }
+
+    function isBlackoutModal( el )
+    {
+        let style = window.getComputedStyle( el );
+        let position = style.getPropertyValue( 'position' );
+        let top = parseInt( style.getPropertyValue( 'top' ) );
+        let left = parseInt( style.getPropertyValue( 'left' ) );
+        let right = parseInt( style.getPropertyValue( 'right' ) );
+        let bottom = parseInt( style.getPropertyValue( 'bottom' ) );
+        let zindex = style.getPropertyValue( 'z-index' );
+        if ( isNaN( zindex ) ) zindex = 0;
+        return parseInt( zindex ) > 1 && position == 'fixed' && ( ( el.offsetHeight > window.innerHeight - 50 && el.offsetWidth > window.innerWidth - 20 ) || (top == 0 && left == 0 && right == 0 && bottom == 0) );
     }
 
     // Main Functions
     function removeBlackout( el )
     {
-        if ( is_blackout_checked ) return;
-        is_blackout_checked = true;
 
-        document.querySelectorAll( 'a,b,center,div,h1,h2,h3,h4,h5,h6,i,font,s,span,strong,p,q,u' ).forEach( ( el ) => {
-            let style = window.getComputedStyle( el );
-            let height, width;
-            if ( style.getPropertyValue( 'position' ) == 'fixed' )
+        document.querySelectorAll( 'div,span,section,p' ).forEach( ( el ) => {
+            if ( isBlackoutModal( el ) )
             {
-                height = style.getPropertyValue( 'height' );
-                width = style.getPropertyValue( 'width' );
-                if ( ( height == '100%' && width == '100%' ) || ( parseInt( height ) > window.innerHeight - 100 && parseInt( width ) > window.innerWidth - 100 ) )
-                {
-                    debug( 'Blackout Removed! ' + el.className );
-                    removeModal( el );
-                    // Remove Blur FX of Elements
-                    addStyle( 'div { -webkit-filter: blur(0px) !important; filter: blur(0px) !important; }' );
-                    // enable context menu again
-                    enableContextMenu();
-                }
+                debug( 'Blackout Removed! ' + el.className );
+                removeModal( el );
+            }
+            if ( isElementBlur( el ) )
+            {
+                var className = addRandomClass( el );
+                classes.push( className );
+                addStyle( '.' + className + '{ -webkit-filter: blur(0px) !important; filter: blur(0px) !important; }' );
             }
         });
-
     }
 
     function removeCurrentModal()
     {
-        document.querySelectorAll( 'a,b,center,div,h1,h2,h3,h4,h5,h6,i,font,s,span,strong,p,q,u' ).forEach( ( el ) => {
+        document.querySelectorAll( 'div,span,section,p' ).forEach( ( el ) => {
            if ( el.innerText.length < 1 ) return;
            if ( adblock_pattern.test( el.innerText ) && disable_pattern.test( el.innerText ) )
            {
-                removeModal( el );
+               removeModal( el );
+               debug( 'CurrentModal: ' + el.innerText );
+               return true;
            }
         });
     }
@@ -225,30 +239,37 @@
     function removeModal( el )
     {
         var className = '';
+        var modalFound = false;
 
         // Find the main Holder of the Modal message
         for (;;) {
-            if ( el.parentNode.tagName == 'BODY' || el.parentNode.tagName == 'HEAD' ) break;
+            if ( isElementFixed ( el ) )
+            {
+                modalFound = true;
+                break;
+            }
             el = el.parentNode;
         }
 
-        if ( (new RegExp(classes.join('|'))).test( el.className ) ) {
-            debug( 'Modal Included: ' + el.className );
-            return;
+        if ( modalFound )
+        {
+            if ( (new RegExp(classes.join('|'))).test( el.className ) ) {
+                debug( 'Modal Included: ' + el.className );
+                return;
+            }
+
+            debug( 'AntiAdBlocker Found!');
+
+            className = addRandomClass( el );
+            classes.push( className );
+
+            // Hide Anti-AdBlocker Modal Elements
+            addStyle( '.' + className + '{ display: none !important; }' );
+
+            debug( 'Modal Removed!: ' + el.className );
+
+            removeBlackout();
         }
-
-        debug( 'AntiAdBlocker Found!');
-
-        // Blackout Elements
-        removeBlackout();
-
-        className = includeElement( el );
-
-        // Hide Anti-AdBlocker Modal Elements
-        addStyle( className + '{ display: none !important; }' );
-
-        debug( 'Modal Removed!: ' + el.className );
-
     }
 
     classes.push( getRandomName() );
@@ -269,9 +290,9 @@
                         // skip nodes without text
                         if ( addedNode.innerText.length < 1 ) return;
                         // search texts that ask to deactivate the AdBlock
-                        //debug( addedNode.innerText );
                         if ( adblock_pattern.test( addedNode.innerText ) && disable_pattern.test( addedNode.innerText ) )
                         {
+                            debug( 'addedNode: ' + addedNode.innerText );
                             removeModal( addedNode );
                         }
                     });
@@ -287,6 +308,12 @@
         removeCurrentModal();
 
         protectCore();
+
+        // Remove Scroll Lock
+        addStyle( 'body { overflow: overlay !important; }' );
+
+        // enable context menu again
+        enableContextMenu();
 
     },false);
 

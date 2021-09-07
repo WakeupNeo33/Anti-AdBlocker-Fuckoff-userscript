@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            Anti-AdBlocker Fuckoff
 // @namespace       Anti-AdBlocker-Fuckoff
-// @version         1.5.4
+// @version         1.5.5
 // @description     Protects from Anti-AdBlockers & DeBlocker
 // @author          Elwyn
 // @license         MIT
@@ -74,12 +74,12 @@
 // ==/UserScript==
 (function() {
 
-	var enable_debug = false;
+    var enable_debug = false;
 
     // Skip iframes
     //if ( window.location !== window.parent.location ) return;
 
-    // AdBlock Pattern to Search
+    // Anti-AdBlocker Pattern to Search
     var adblock_pattern = /ad-block|adblock|ad block|bloqueur|bloqueador|Werbeblocker|&#1570;&#1583;&#1576;&#1604;&#1608;&#1603; &#1576;&#1604;&#1587;|блокировщиком/i;
     var disable_pattern = /kapat|disabl|désactiv|desactiv|desativ|deaktiv|detect|enabled|turned off|turn off|&#945;&#960;&#949;&#957;&#949;&#961;&#947;&#959;&#960;&#959;&#943;&#951;&#963;&#951;|&#1079;&#1072;&#1087;&#1088;&#1077;&#1097;&#1072;&#1090;&#1100;|állítsd le|publicités|рекламе|verhindert|advert|kapatınız/i;
 
@@ -92,13 +92,16 @@
 
     // HELPER Functions
     //-----------------
-    function debug( value ) {
+    function debug( msg, val ) {
         if ( !enable_debug ) return;
-        if ( typeof value == 'string' ) {
-            console.log( "ANTI-ADBLOCKER: " + value );
-        } else {
-            console.log( "ANTI-ADBLOCKER: -> ");
-            console.log( value );
+        console.log( '%c ANTI-ADBLOCKER ','color: white; background-color: red', msg );
+        if ( val !== undefined )
+        {
+            if ( val.nodeType === Node.ELEMENT_NODE ) {
+                console.log ( 'TagName: ' + val.tagName + ' | Id: ' + val.id + ' | Class: ' + val.classList );
+            } else {
+                console.log ( val );
+            }
         }
     }
 
@@ -152,23 +155,40 @@
 
         var $_removeChild = unsafeWindow.Node.prototype.removeChild;
         unsafeWindow.Node.prototype.removeChild = function( node ) {
-            if ( node.tagName == 'HEAD' || node.parentNode.tagName == 'HEAD' || node.tagName == 'BODY' ) return;
-            if ( node.parentNode == document.body.firstElementChild ) return;
+            if ( node.tagName == 'HEAD' || node.parentNode.tagName == 'HEAD' || node.tagName == 'BODY' ){
+                if ( node.parentNode.tagName == 'HEAD' ){
+                    debug( 'An attempt to delete the element ' + node.tagName + ' from ' + node.parentNode.tagName + ' was blocked' );
+                } else {
+                    debug( 'An attempt to delete the element ' + node.tagName + ' was blocked' );
+                }
+                return;
+            }
+            if ( node.parentNode == document.body.firstElementChild ) {
+                debug( 'An attempt to delete the element ' + node.tagName + ' from ' + node.parentNode.tagName + ' was blocked' );
+                return;
+            }
             $_removeChild.apply( this, arguments );
         };
 
+        // Protect innerHTML
+
         var $_innerHTML = unsafeWindow.Node.prototype.innerHTML;
         unsafeWindow.Node.prototype.innerHTML = function( node ) {
-            if ( node.tagName == 'HEAD' || node.tagName == 'BODY' ) return;
+            if ( node.tagName == 'HEAD' || node.tagName == 'BODY' ) {
+                debug( 'An attempt to change the content of the element ' + node.tagName + ' was blocked' );
+                return;
+            }
             $_innerHTML.apply( this, arguments );
         };
 
-        // Protect innerHTML
         var $_innerHTML_set = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML').set;
 
         Object.defineProperty(Element.prototype, 'innerHTML', {
             set: function (value) {
-                if ( this.tagName == 'HEAD' || this.tagName == 'BODY' ) return;
+                if ( this.tagName == 'HEAD' || this.tagName == 'BODY' ){
+                    debug( 'An attempt to change the content of the element ' + this.tagName + ' was blocked' );
+                    return;
+                }
                 //Call the original setter
                 return $_innerHTML_set.call(this, value);
             }
@@ -190,6 +210,12 @@
         return ( style.getPropertyValue( 'position' ) == 'fixed' );
     }
 
+    function isOverflowHidden( el )
+    {
+        var style = window.getComputedStyle( el );
+        return ( style.getPropertyValue( 'overflow' ) == 'hidden' );
+    }
+
     function isBlackoutModal( el )
     {
         var style = window.getComputedStyle( el );
@@ -203,46 +229,80 @@
         return parseInt( zindex ) > 1 && position == 'fixed' && ( ( el.offsetHeight > window.innerHeight - 50 && el.offsetWidth > window.innerWidth - 20 ) || (top == 0 && left == 0 && right == 0 && bottom == 0) );
     }
 
+    function isAntiModalWindows( el )
+    {
+        return isElementFixed ( el ) && ( (adblock_pattern.test( el.textContent ) && disable_pattern.test( el.textContent )) || isBlackoutModal( el ) );
+    }
+
     // Main Functions
     function checkModals()
     {
+        debug( 'Checking Modals' );
+        var modalFound = false;
+        // Only check common used html tag names
         document.querySelectorAll( 'div,section,iframe' ).forEach( ( el ) => {
-            if ( isElementFixed ( el ) && ( (adblock_pattern.test( el.textContent ) && disable_pattern.test( el.textContent )) || isBlackoutModal( el ) ) )
+            if ( isAntiModalWindows( el ) )
             {
+                modalFound = true;
                 removeModal( el );
             }
             else if ( isElementBlur( el ) )
             {
+                debug( 'Blur Element Detected & Deblurred: ', el);
                 el.classList.add( 'no_blur' );
             }
         });
+
+        if ( modalFound )
+        {
+            unblockScroll();
+        }
     }
 
     function removeModal( el )
     {
-        if ( (new RegExp(classes.join('|'))).test( el.classList ) ) return;
-        var className = '';
+        // Skip the already processed elements
+        if ( (new RegExp(classes.join('|'))).test( el.classList ) ) {
+            //debug( 'Modal already added : ', el );
+            return;
+        }
 
-        debug( 'Modal Removed: ' + el.classList );
+        // Definde a random class name to hide the element
+        // ( so that it is not so easy to detect the class name )
+        var class_name = '';
+        class_name = addRandomClass( el );
+        classes.push( class_name );
 
-        className = addRandomClass( el );
-        classes.push( className );
-
+        // Hide the element through a high priority incorporating the sentence in the style parameter
         el.setAttribute('style', (el.getAttribute('style')||'') + ';display: none !important;');
-        addStyle( '.' + className + '{ display: none !important; }' );
+
+        // Also, add the random class name to the element
+        // (in case there is a script that eliminates the previous statement)
+        addStyle( '.' + class_name + '{ display: none !important; }' );
+
+        debug( 'Modal Detected & Removed: ', el);
     }
 
     function unblockScroll()
     {
-        document.body.setAttribute('style', (document.body.getAttribute('style')||'').replace('overflow: visible !important;','') + 'overflow: visible !important;');
-        document.body.classList.add( 'scroll_on' );
-        document.getElementsByTagName('html')[0].setAttribute('style', (document.getElementsByTagName('html')[0].getAttribute('style')||'').replace('overflow: visible !important;','') + 'overflow: visible !important;');
-        document.getElementsByTagName('html')[0].classList.add( 'scroll_on' );
+        var htmlTag = document.getElementsByTagName('html')[0];
+        if ( isOverflowHidden( document.body ) )
+        {
+            document.body.setAttribute('style', (document.body.getAttribute('style')||'').replace('overflow: visible !important;','') + 'overflow: visible !important;');
+            document.body.classList.add( 'scroll_on' );
+            debug( 'Scroll Unblocked from BODY tag');
+        }
+        if ( isOverflowHidden( htmlTag ) )
+        {
+            htmlTag.setAttribute('style', (htmlTag.getAttribute('style')||'').replace('overflow: visible !important;','') + 'overflow: visible !important;');
+            htmlTag.classList.add( 'scroll_on' );
+            debug( 'Scroll Unblocked from HTML tag ');
+        }
     }
 
     classes.push( getRandomName() );
 
-    document.addEventListener('DOMContentLoaded', function() {
+    window.addEventListener('DOMContentLoaded', (event) => {
 
         // Mutation Observer
         var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
@@ -252,16 +312,15 @@
             mutations.forEach( (mutation) => {
                 if ( mutation.addedNodes.length ) {
                     Array.prototype.forEach.call( mutation.addedNodes, ( el ) => {
-                        // skip nodes with undefined text
-                        //if ( typeof el.textContent == 'undefined' ) return;
+                        // skip unusual html tag names
                         if ( !tagNames_pattern.test ( el.tagName ) ) return;
-                        // skip nodes without text
-                        //if ( el.textContent.length < 1 ) return;
-                        // search texts that ask to deactivate the AdBlock
-                        if ( isElementFixed ( el ) && ( (adblock_pattern.test( el.textContent ) && disable_pattern.test( el.textContent )) || isBlackoutModal( el ) ) )
+
+                        // Check if element is an Anti-Adblock Modal Windows
+                        if ( isAntiModalWindows( el ) )
                         {
-                            debug( 'addedNode: ' + el.textContent );
-                            removeModal( addedNode );
+                            debug( 'OnMutationObserver: ', el );
+                            removeModal( el );
+                            unblockScroll();
                         }
                     });
                 }
@@ -273,22 +332,25 @@
             subtree : true
         });
 
+        // Protect Core Functions
         protectCore();
 
         // enable context menu again
         enableContextMenu();
 
-        checkModals();
-
+        // First check with a little delay
         setTimeout( function() {
             checkModals();
-            unblockScroll();
-        }, 100 );
+        }, 10 );
 
         addStyle( '.no_blur { -webkit-filter: blur(0px) !important; filter: blur(0px) !important; }' );
         addStyle( 'body.scroll_on, html.scroll_on { overflow: visible !important; }' );
 
-    },false);
+    });
 
+    window.addEventListener('load', (event) => {
+        // Second check, when page is complete loaded ( just in case )
+        checkModals();
+    });
 
 })();

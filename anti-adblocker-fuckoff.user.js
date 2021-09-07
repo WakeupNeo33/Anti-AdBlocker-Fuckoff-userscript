@@ -1,8 +1,10 @@
 // ==UserScript==
 // @name            Anti-AdBlocker Fuckoff
+// @name:es         Anti-AdBlocker Fuckoff
 // @namespace       Anti-AdBlocker-Fuckoff
-// @version         1.5.5
-// @description     Protects from Anti-AdBlockers & DeBlocker
+// @version         1.5.6
+// @description     Protects & Remove Anti-AdBlockers modal windows from web sites
+// @description:es  Protege y elimina las ventanas modales de Anti-AdBlockers de los sitios web
 // @author          Elwyn
 // @license         MIT
 // @homepage        https://github.com/WakeupNeo33/Anti-AdBlocker-Fuckoff-userscript
@@ -74,7 +76,7 @@
 // ==/UserScript==
 (function() {
 
-    var enable_debug = false;
+	var enable_debug = true;
 
     // Skip iframes
     //if ( window.location !== window.parent.location ) return;
@@ -229,9 +231,9 @@
         return parseInt( zindex ) > 1 && position == 'fixed' && ( ( el.offsetHeight > window.innerHeight - 50 && el.offsetWidth > window.innerWidth - 20 ) || (top == 0 && left == 0 && right == 0 && bottom == 0) );
     }
 
-    function isAntiModalWindows( el )
+    function isModalWindows( el )
     {
-        return isElementFixed ( el ) && ( (adblock_pattern.test( el.textContent ) && disable_pattern.test( el.textContent )) || isBlackoutModal( el ) );
+        return isElementFixed ( el ) && ( (adblock_pattern.test( el.textContent ) && disable_pattern.test( el.textContent )) || isBlackoutModal( el ) || el.tagName == 'IFRAME' );
     }
 
     // Main Functions
@@ -316,7 +318,7 @@
                         if ( !tagNames_pattern.test ( el.tagName ) ) return;
 
                         // Check if element is an Anti-Adblock Modal Windows
-                        if ( isAntiModalWindows( el ) )
+                        if ( isModalWindows( el ) )
                         {
                             debug( 'OnMutationObserver: ', el );
                             removeModal( el );

@@ -2,7 +2,7 @@
 // @name            Anti-AdBlocker Fuckoff
 // @name:es         Anti-AdBlocker Fuckoff
 // @namespace       Anti-AdBlocker-Fuckoff
-// @version         1.5.7
+// @version         1.5.8
 // @description     Protects & Remove Anti-AdBlockers modal windows from web sites
 // @description:es  Protege y elimina las ventanas modales de Anti-AdBlockers de los sitios web
 // @author          Elwyn
@@ -233,7 +233,7 @@
 
     function isModalWindows( el )
     {
-        return isElementFixed ( el ) && ( (adblock_pattern.test( el.textContent ) && disable_pattern.test( el.textContent )) || isBlackoutModal( el ) || el.tagName == 'IFRAME' );
+        return isElementFixed ( el ) && ( (adblock_pattern.test( el.textContent ) && disable_pattern.test( el.textContent )) || el.tagName == 'IFRAME' );
     }
 
     // Main Functions
@@ -257,6 +257,12 @@
 
         if ( modalFound )
         {
+            document.querySelectorAll( 'div,section' ).forEach( ( el ) => {
+                if ( isElementFixed( el ) && isBlackoutModal( el ) )
+                {
+                    removeModal( el );
+                }
+            });
             unblockScroll();
         }
     }

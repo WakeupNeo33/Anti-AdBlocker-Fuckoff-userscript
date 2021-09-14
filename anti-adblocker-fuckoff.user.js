@@ -2,7 +2,7 @@
 // @name            Anti-AdBlocker Fuckoff
 // @name:es         Anti-AdBlocker Fuckoff
 // @namespace       Anti-AdBlocker-Fuckoff
-// @version         1.5.8
+// @version         1.5.9
 // @description     Protects & Remove Anti-AdBlockers modal windows from web sites
 // @description:es  Protege y elimina las ventanas modales de Anti-AdBlockers de los sitios web
 // @author          Elwyn
@@ -19,30 +19,51 @@
 // @exclude         https://*apple.com/*
 // @exclude         https://*ask.com/*
 // @exclude         https://*baidu.com/*
+// @exclude         https://*binance.com/*
+// @exclude         https://*binance.us/*
 // @exclude         https://*bing.com/*
+// @exclude         https://*bitfinex.com/*
+// @exclude         https://*bitflyer.com/*
+// @exclude         https://*bitstamp.net/*
+// @exclude         https://*blockchain.com/*
+// @exclude         https://*blockchair.com/*
+// @exclude         https://*blockcypher.com/*
+// @exclude         https://*bscscan.com/*
 // @exclude         https://*buffer.com/*
 // @exclude         https://*bufferapp.com/*
 // @exclude         https://*calm.com/*
 // @exclude         https://*chatango.com/*
+// @exclude         https://*coinbase.com/*
+// @exclude         https://*coinmarketcap.com/*
+// @exclude         https://*doctor-groups.com/*
 // @exclude         https://*duckduckgo.com/*
 // @exclude         https://*ebay.com/*
+// @exclude         https://*etherscan.io/*
 // @exclude         https://*facebook.com/*
 // @exclude         https://*flattr.com/*
 // @exclude         https://*flickr.com/*
 // @exclude         https://*fsf.org/*
+// @exclude         https://*ftx.com/*
+// @exclude         https://*ftx.us/*
+// @exclude         https://*gate.io/*
 // @exclude         https://*geeksforgeeks.org/*
+// @exclude         https://*gemini.com/*
 // @exclude         https://*ghacks.net/*
 // @exclude         https://*github.com/*
 // @exclude         https://*gitlab.com/*
 // @exclude         https://*google.*
 // @exclude         https://*greasyfork.org/*
+// @exclude         https://*huobi.com/*
 // @exclude         https://*imdb.com/*
 // @exclude         https://*imgbox.com/*
 // @exclude         https://*imgur.com/*
 // @exclude         https://*instagram.com/*
 // @exclude         https://*jsbin.com/*
 // @exclude         https://*jsfiddle.net/*
+// @exclude         https://*kucoin.com/*
+// @exclude         https://*kraken.com/*
 // @exclude         https://*linkedin.com/*
+// @exclude         https://*liquid.com/*
 // @exclude         https://*live.com/*
 // @exclude         https://*mail.ru/*
 // @exclude         https://*minds.com/*
@@ -54,6 +75,7 @@
 // @exclude         https://*paypal.com/*
 // @exclude         https://*pinterest.com/*
 // @exclude         http*://*plnkr.co/*
+// @exclude         http*://*poloniex.com/*
 // @exclude         https://*primevideo.com/*
 // @exclude         https://*qq.com/*
 // @exclude         https://*reddit.com/*
@@ -62,6 +84,7 @@
 // @exclude         https://*trello.com/*
 // @exclude         https://*twitch.tv/*
 // @exclude         https://*twitter.com/*
+// @exclude         https://*viawallet.com/*
 // @exclude         https://*vimeo.com/*
 // @exclude         https://*whatsapp.com/*
 // @exclude         https://*wikipedia.org/*
@@ -328,8 +351,8 @@
                         {
                             debug( 'OnMutationObserver: ', el );
                             removeModal( el );
-                            unblockScroll();
                         }
+                        unblockScroll();
                     });
                 }
             });

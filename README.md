@@ -1,4 +1,4 @@
-# Anti-AdBlocker-Fuckoff-userscript v1.5.8
+# Anti-AdBlocker-Fuckoff-userscript v1.6
 
 Protects from Anti-AdBlockers & DeBlocker
 

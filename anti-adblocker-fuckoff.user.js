@@ -2,7 +2,7 @@
 // @name            Anti-AdBlocker Fuckoff
 // @name:es         Anti-AdBlocker Fuckoff
 // @namespace       Anti-AdBlocker-Fuckoff
-// @version         1.5.9
+// @version         1.6
 // @description     Protects & Remove Anti-AdBlockers modal windows from web sites
 // @description:es  Protege y elimina las ventanas modales de Anti-AdBlockers de los sitios web
 // @author          Elwyn
@@ -40,6 +40,7 @@
 // @exclude         https://*ebay.com/*
 // @exclude         https://*etherscan.io/*
 // @exclude         https://*facebook.com/*
+// @exclude         https://*firefaucet.win/*
 // @exclude         https://*flattr.com/*
 // @exclude         https://*flickr.com/*
 // @exclude         https://*fsf.org/*
@@ -77,6 +78,7 @@
 // @exclude         http*://*plnkr.co/*
 // @exclude         http*://*poloniex.com/*
 // @exclude         https://*primevideo.com/*
+// @exclude         https://*protonmail.com/*
 // @exclude         https://*qq.com/*
 // @exclude         https://*reddit.com/*
 // @exclude         https://*stackoverflow.com/*
@@ -114,6 +116,7 @@
 
     var classes = [];
 
+    document.html = document.getElementsByTagName('html')[0];
 
     // HELPER Functions
     //-----------------
@@ -240,6 +243,11 @@
         var style = window.getComputedStyle( el );
         return ( style.getPropertyValue( 'overflow' ) == 'hidden' );
     }
+    function isNotHidden( el )
+    {
+        var style = window.getComputedStyle( el );
+        return ( style.getPropertyValue( 'display' ) != 'none' );
+    }
 
     function isBlackoutModal( el )
     {
@@ -259,38 +267,61 @@
         return isElementFixed ( el ) && ( (adblock_pattern.test( el.textContent ) && disable_pattern.test( el.textContent )) || el.tagName == 'IFRAME' );
     }
 
+    function unblockScroll()
+    {
+        if ( isOverflowHidden( document.body ) )
+        {
+            document.body.setAttribute('style', (document.body.getAttribute('style')||'').replace('overflow: visible !important;','') + 'overflow: visible !important;');
+            document.body.classList.add( 'scroll_on' );
+            debug( 'Scroll Unblocked from BODY tag');
+        }
+        if ( isOverflowHidden( document.htmllTag ) )
+        {
+            document.html.setAttribute('style', (document.html.getAttribute('style')||'').replace('overflow: visible !important;','') + 'overflow: visible !important;');
+            document.html.classList.add( 'scroll_on' );
+            debug( 'Scroll Unblocked from HTML tag ');
+        }
+    }
+
     // Main Functions
+    function removeBackStuff()
+    {
+        document.querySelectorAll( 'div,section' ).forEach( ( el ) => {
+            if ( isBlackoutModal( el ) )
+            {
+                debug( 'Blackout Modal Detected & Removed: ', el);
+                el.setAttribute('style', (el.getAttribute('style')||'') + ';display: none !important;');
+                el.classList.add( 'hide_modal' );
+            }
+            else if ( isElementBlur( el ) )
+            {
+                debug( 'Blur Element Detected & Deblurred: ', el);
+                el.classList.add( 'un_blur' );
+            }
+        });
+        setTimeout( unblockScroll, 500);
+    }
+
     function checkModals()
     {
         debug( 'Checking Modals' );
         var modalFound = false;
         // Only check common used html tag names
         document.querySelectorAll( 'div,section,iframe' ).forEach( ( el ) => {
-            if ( isModalWindows( el ) )
+            if ( isModalWindows( el ) && isNotHidden( el ) )
             {
                 modalFound = true;
                 removeModal( el );
-            }
-            else if ( isElementBlur( el ) )
-            {
-                debug( 'Blur Element Detected & Deblurred: ', el);
-                el.classList.add( 'no_blur' );
             }
         });
 
         if ( modalFound )
         {
-            document.querySelectorAll( 'div,section' ).forEach( ( el ) => {
-                if ( isElementFixed( el ) && isBlackoutModal( el ) )
-                {
-                    removeModal( el );
-                }
-            });
-            unblockScroll();
+            setTimeout( removeBackStuff, 150);
         }
     }
 
-    function removeModal( el )
+    function removeModal( el, isNew )
     {
         // Skip the already processed elements
         if ( (new RegExp(classes.join('|'))).test( el.classList ) ) {
@@ -312,22 +343,10 @@
         addStyle( '.' + class_name + '{ display: none !important; }' );
 
         debug( 'Modal Detected & Removed: ', el);
-    }
 
-    function unblockScroll()
-    {
-        var htmlTag = document.getElementsByTagName('html')[0];
-        if ( isOverflowHidden( document.body ) )
+        if ( isNew )
         {
-            document.body.setAttribute('style', (document.body.getAttribute('style')||'').replace('overflow: visible !important;','') + 'overflow: visible !important;');
-            document.body.classList.add( 'scroll_on' );
-            debug( 'Scroll Unblocked from BODY tag');
-        }
-        if ( isOverflowHidden( htmlTag ) )
-        {
-            htmlTag.setAttribute('style', (htmlTag.getAttribute('style')||'').replace('overflow: visible !important;','') + 'overflow: visible !important;');
-            htmlTag.classList.add( 'scroll_on' );
-            debug( 'Scroll Unblocked from HTML tag ');
+            setTimeout( removeBackStuff, 150);
         }
     }
 
@@ -347,12 +366,11 @@
                         if ( !tagNames_pattern.test ( el.tagName ) ) return;
 
                         // Check if element is an Anti-Adblock Modal Windows
-                        if ( isModalWindows( el ) )
+                        if ( isModalWindows( el ) && isNotHidden( el ) )
                         {
                             debug( 'OnMutationObserver: ', el );
-                            removeModal( el );
+                            removeModal( el, true );
                         }
-                        unblockScroll();
                     });
                 }
             });
@@ -374,8 +392,7 @@
             checkModals();
         }, 10 );
 
-        addStyle( '.no_blur { -webkit-filter: blur(0px) !important; filter: blur(0px) !important; }' );
-        addStyle( 'body.scroll_on, html.scroll_on { overflow: visible !important; }' );
+        addStyle( 'body.scroll_on, html.scroll_on { overflow: visible !important; } .hide_modal { display: none !important; } .un_blur { -webkit-filter: blur(0px) !important; filter: blur(0px) !important; }' );
 
     });
 

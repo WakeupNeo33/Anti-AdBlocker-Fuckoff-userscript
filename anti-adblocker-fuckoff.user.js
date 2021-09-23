@@ -2,7 +2,7 @@
 // @name            Anti-AdBlocker Fuckoff
 // @name:es         Anti-AdBlocker Fuckoff
 // @namespace       Anti-AdBlocker-Fuckoff
-// @version         1.6.1
+// @version         1.6.2
 // @description     Protects & Remove Anti-AdBlockers modal windows from web sites
 // @description:es  Protege y elimina las ventanas modales de Anti-AdBlockers de los sitios web
 // @author          Elwyn
@@ -66,6 +66,7 @@
 // @exclude         https://*liquid.com/*
 // @exclude         https://*live.com/*
 // @exclude         https://*mail.ru/*
+// @exclude         https://*mega.nz/*
 // @exclude         https://*minds.com/*
 // @exclude         https://*microsoft.com/*
 // @exclude         https://*msn.com/*

@@ -2,7 +2,7 @@
 // @name            Anti-AdBlocker Fuckoff
 // @name:es         Anti-AdBlocker Fuckoff
 // @namespace       Anti-AdBlocker-Fuckoff
-// @version         1.6
+// @version         1.6.1
 // @description     Protects & Remove Anti-AdBlockers modal windows from web sites
 // @description:es  Protege y elimina las ventanas modales de Anti-AdBlockers de los sitios web
 // @author          Elwyn
@@ -49,7 +49,6 @@
 // @exclude         https://*gate.io/*
 // @exclude         https://*geeksforgeeks.org/*
 // @exclude         https://*gemini.com/*
-// @exclude         https://*ghacks.net/*
 // @exclude         https://*github.com/*
 // @exclude         https://*gitlab.com/*
 // @exclude         https://*google.*
@@ -86,6 +85,7 @@
 // @exclude         https://*trello.com/*
 // @exclude         https://*twitch.tv/*
 // @exclude         https://*twitter.com/*
+// @exclude         https://*userstyles.org/*
 // @exclude         https://*viawallet.com/*
 // @exclude         https://*vimeo.com/*
 // @exclude         https://*whatsapp.com/*
@@ -101,10 +101,7 @@
 // ==/UserScript==
 (function() {
 
-	var enable_debug = false;
-
-    // Skip iframes
-    //if ( window.location !== window.parent.location ) return;
+    var enable_debug = false;
 
     // Anti-AdBlocker Pattern to Search
     var adblock_pattern = /ad-block|adblock|ad block|bloqueur|bloqueador|Werbeblocker|&#1570;&#1583;&#1576;&#1604;&#1608;&#1603; &#1576;&#1604;&#1587;|блокировщиком/i;
@@ -116,20 +113,18 @@
 
     var classes = [];
 
-    document.html = document.getElementsByTagName('html')[0];
-
     // HELPER Functions
     //-----------------
     function debug( msg, val ) {
         if ( !enable_debug ) return;
         console.log( '%c ANTI-ADBLOCKER ','color: white; background-color: red', msg );
-        if ( val !== undefined )
+        if ( val === undefined ) return;
+        if ( val.nodeType === Node.ELEMENT_NODE )
         {
-            if ( val.nodeType === Node.ELEMENT_NODE ) {
-                console.log ( 'TagName: ' + val.tagName + ' | Id: ' + val.id + ' | Class: ' + val.classList );
-            } else {
-                console.log ( val );
-            }
+            console.log ( 'TagName: ' + val.nodeName + ' | Id: ' + val.id + ' | Class: ' + val.classList );
+            console.log ( val );
+        } else {
+            console.log ( val );
         }
     }
 
@@ -183,17 +178,14 @@
 
         var $_removeChild = unsafeWindow.Node.prototype.removeChild;
         unsafeWindow.Node.prototype.removeChild = function( node ) {
-            if ( node.tagName == 'HEAD' || node.parentNode.tagName == 'HEAD' || node.tagName == 'BODY' ){
-                if ( node.parentNode.tagName == 'HEAD' ){
-                    debug( 'An attempt to delete the element ' + node.tagName + ' from ' + node.parentNode.tagName + ' was blocked' );
-                } else {
-                    debug( 'An attempt to delete the element ' + node.tagName + ' was blocked' );
-                }
-                return;
+            if ( node.nodeName == 'HEAD' || node.parentNode.nodeName == 'HEAD'){
+                return debug( 'An attempt to DELETE the element ' + node.nodeName + ' was blocked', node );
             }
-            if ( node.parentNode == document.body.firstElementChild ) {
-                debug( 'An attempt to delete the element ' + node.tagName + ' from ' + node.parentNode.tagName + ' was blocked' );
-                return;
+            else if ( node.nodeName == 'BODY' ){
+                if ( node.parentNode == document.body.firstElementChild ) {
+                    return debug( 'An attempt to DELETE the element ' + node.nodeName + ' from ' + node.parentNode.nodeName + ' was blocked', node );
+                }
+                return debug( 'An attempt to DELETE the element ' + node.nodeName + ' was blocked', node );
             }
             $_removeChild.apply( this, arguments );
         };
@@ -202,9 +194,8 @@
 
         var $_innerHTML = unsafeWindow.Node.prototype.innerHTML;
         unsafeWindow.Node.prototype.innerHTML = function( node ) {
-            if ( node.tagName == 'HEAD' || node.tagName == 'BODY' ) {
-                debug( 'An attempt to change the content of the element ' + node.tagName + ' was blocked' );
-                return;
+            if ( node.nodeName == 'BODY' ) {
+                return debug( 'An attempt to CHANGE the content of the element ' + node.nodeName + ' was blocked\n"' + node.textContent+'"' );
             }
             $_innerHTML.apply( this, arguments );
         };
@@ -213,9 +204,8 @@
 
         Object.defineProperty(Element.prototype, 'innerHTML', {
             set: function (value) {
-                if ( this.tagName == 'HEAD' || this.tagName == 'BODY' ){
-                    debug( 'An attempt to change the content of the element ' + this.tagName + ' was blocked' );
-                    return;
+                if ( this.nodeName == 'BODY' ){
+                    return debug( 'An attempt to CHANGE the content of the element ' + this.nodeName + ' was blocked\n"' + this.textContent+'"\n"' + value + '"' );
                 }
                 //Call the original setter
                 return $_innerHTML_set.call(this, value);
@@ -350,9 +340,11 @@
         }
     }
 
-    classes.push( getRandomName() );
-
     window.addEventListener('DOMContentLoaded', (event) => {
+
+        classes.push( getRandomName() );
+
+        document.html = document.getElementsByTagName('html')[0];
 
         // Mutation Observer
         var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
@@ -381,16 +373,13 @@
             subtree : true
         });
 
-        // Protect Core Functions
-        protectCore();
-
         // enable context menu again
         enableContextMenu();
 
         // First check with a little delay
         setTimeout( function() {
             checkModals();
-        }, 10 );
+        }, 50 );
 
         addStyle( 'body.scroll_on, html.scroll_on { overflow: visible !important; } .hide_modal { display: none !important; } .un_blur { -webkit-filter: blur(0px) !important; filter: blur(0px) !important; }' );
 
@@ -400,5 +389,8 @@
         // Second check, when page is complete loaded ( just in case )
         checkModals();
     });
+
+    // Protect Core Functions
+    protectCore();
 
 })();

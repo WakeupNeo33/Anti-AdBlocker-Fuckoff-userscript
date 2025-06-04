@@ -2,15 +2,13 @@
 // @name            Anti-AdBlocker Fuckoff
 // @name:es         Anti-AdBlocker Fuckoff
 // @namespace       Anti-AdBlocker-Fuckoff
-// @version         1.6.2
+// @version         1.68
 // @description     Protects & Remove Anti-AdBlockers modal windows from web sites
 // @description:es  Protege y elimina las ventanas modales de Anti-AdBlockers de los sitios web
 // @author          Elwyn
 // @license         MIT
 // @homepage        https://github.com/WakeupNeo33/Anti-AdBlocker-Fuckoff-userscript
 // @supportURL      https://github.com/WakeupNeo33/Anti-AdBlocker-Fuckoff-userscript/issues
-// @downloadURL     https://github.com/WakeupNeo33/Anti-AdBlocker-Fuckoff-userscript/raw/main/anti-adblocker-fuckoff.user.js
-// @updateURL       https://github.com/WakeupNeo33/Anti-AdBlocker-Fuckoff-userscript/raw/main/anti-adblocker-fuckoff.user.js
 // @iconURL         https://github.com/WakeupNeo33/Anti-AdBlocker-Fuckoff-userscript/raw/main/icon.png
 // @include         *
 // @exclude         https://*aliexpress.com/*
@@ -80,8 +78,10 @@
 // @exclude         https://*primevideo.com/*
 // @exclude         https://*protonmail.com/*
 // @exclude         https://*qq.com/*
+// @exclude         https://*raider.io/*
 // @exclude         https://*reddit.com/*
 // @exclude         https://*stackoverflow.com/*
+// @exclude         https://*steampowered.com/*
 // @exclude         https://*tampermonkey.net/*
 // @exclude         https://*trello.com/*
 // @exclude         https://*twitch.tv/*
@@ -92,6 +92,7 @@
 // @exclude         https://*whatsapp.com/*
 // @exclude         https://*wikipedia.org/*
 // @exclude         https://*w3schools.com/*
+// @exclude         https://*x.com/*
 // @exclude         https://*yahoo.*
 // @exclude         https://*yandex.ru/*
 // @exclude         https://*youtube.com/*
@@ -99,16 +100,18 @@
 // @noframes
 // @run-at          document-start
 // @grant           unsafeWindow
+// @downloadURL https://update.greasyfork.org/scripts/397070/Anti-AdBlocker%20Fuckoff.user.js
+// @updateURL https://update.greasyfork.org/scripts/397070/Anti-AdBlocker%20Fuckoff.meta.js
 // ==/UserScript==
 (function() {
 
     var enable_debug = false;
 
     // Anti-AdBlocker Pattern to Search
-    var adblock_pattern = /ad-block|adblock|ad block|bloqueur|bloqueador|Werbeblocker|&#1570;&#1583;&#1576;&#1604;&#1608;&#1603; &#1576;&#1604;&#1587;|блокировщиком/i;
+    var adblock_pattern = /ad-block|adblock|ad block|blocking ads|bloqueur|bloqueador|Werbeblocker|&#1570;&#1583;&#1576;&#1604;&#1608;&#1603; &#1576;&#1604;&#1587;|блокировщиком/i;
     var disable_pattern = /kapat|disabl|désactiv|desactiv|desativ|deaktiv|detect|enabled|turned off|turn off|&#945;&#960;&#949;&#957;&#949;&#961;&#947;&#959;&#960;&#959;&#943;&#951;&#963;&#951;|&#1079;&#1072;&#1087;&#1088;&#1077;&#1097;&#1072;&#1090;&#1100;|állítsd le|publicités|рекламе|verhindert|advert|kapatınız/i;
 
-    var tagNames_pattern = /div|section|iframe/i;
+    var tagNames_pattern = /b|center|div|font|i|iframe|s|span|section|u/i;
 
     var is_core_protected = false;
 
@@ -118,14 +121,14 @@
     //-----------------
     function debug( msg, val ) {
         if ( !enable_debug ) return;
-        console.log( '%c ANTI-ADBLOCKER ','color: white; background-color: red', msg );
+        console.log( '%c ANTI-ADBLOCKER \n','color: white; background-color: red', msg );
         if ( val === undefined ) return;
         if ( val.nodeType === Node.ELEMENT_NODE )
         {
             console.log ( 'TagName: ' + val.nodeName + ' | Id: ' + val.id + ' | Class: ' + val.classList );
             console.log ( val );
         } else {
-            console.log ( val );
+            console.log ( '%c' +val, 'color: grey;' );
         }
     }
 
@@ -147,12 +150,11 @@
 
     function getRandomName( size )
     {
-        var chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        var i;
+        var charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
         var name = '';
-        for (i = 0; i < (size||randomInt(10,20)); i++)
+        for (var i = 0; i < (size||randomInt(10,20)); ++i)
         {
-            name += chars.charAt( randomInt(0,chars.length) );
+            name += charset.charAt( Math.floor( Math.random() * charset.length) );
         }
         return name;
     }
@@ -163,23 +165,108 @@
         return name;
     }
 
-    /* Thanks to RuiGuilherme  */
-    const enableContextMenu = () => {
-        window.addEventListener('contextmenu', (event) => {
-            event.stopPropagation();
-            event.stopImmediatePropagation();
-        }, true);
+    function enableRightClick() {
+        if (typeof jQuery !== 'undefined') {
+            jQuery(function($) {
+                $('img').removeAttr('onmousedown').removeAttr('onselectstart').removeAttr('ondragstart');
+                $(document).off('contextmenu');
+                $(document.body).off('contextmenu');
+                $(document.body).off('selectstart');
+                $(document.body).off('dragstart');
+            });
+        } else {
+            const images = document.querySelectorAll('img');
+            images.forEach(img => {
+                img.removeAttribute('onmousedown');
+                img.removeAttribute('onselectstart');
+                img.removeAttribute('ondragstart');
+            });
+        }
+        document.oncontextmenu=null;
+        document.onmousedown=null;
+        document.body.oncontextmenu=null;
+        document.body.onselectstart=null;
+        document.body.ondragstart=null;
     }
 
+
+
+    function isElementBlur( el )
+    {
+        if (el instanceof Element) {
+          var style = window.getComputedStyle( el );
+          var filter = style.getPropertyValue( 'filter' );
+          return ( (/blur/i).test( filter ) );
+        }
+    }
+
+    function isElementFixed( el )
+    {
+        if (el instanceof Element) {
+          var style = window.getComputedStyle( el );
+          return ( style.getPropertyValue( 'position' ) == 'fixed' );
+        }
+    }
+
+    function isOverflowHidden( el )
+    {
+        if (el instanceof Element) {
+          var style = window.getComputedStyle( el );
+          return ( style.getPropertyValue( 'overflow' ) == 'hidden' );
+        }
+    }
+    function isNotHidden( el )
+    {
+        if (el instanceof Element) {
+          var style = window.getComputedStyle( el );
+          return ( style.getPropertyValue( 'display' ) != 'none' );
+        }
+    }
+
+    function isBlackoutModal( el )
+    {
+        if (el instanceof Element) {
+          var style = window.getComputedStyle( el );
+          var position = style.getPropertyValue( 'position' );
+          var top = parseInt( style.getPropertyValue( 'top' ) );
+          var left = parseInt( style.getPropertyValue( 'left' ) );
+          var right = parseInt( style.getPropertyValue( 'right' ) );
+          var bottom = parseInt( style.getPropertyValue( 'bottom' ) );
+          if (position == 'fixed') {
+            debug ( "Possible Blackout",
+                   "position: " + position +
+                   "\n top: " + top + " left: " + left +
+                   "\n bottom: " + bottom + " right: " + right +
+                   "\n Height: " + (window.innerHeight / el.offsetHeight) +
+                   "\n Width: " + (window.innerWidth / el.offsetWidth)
+                  );
+          }
+          return position == 'fixed' && ( ( (window.innerHeight / el.offsetHeight) > 0.96 && (window.innerWidth / el.offsetWidth) > 0.96 ) && ((top <= 2 && left <= 2) || (right <= 2 && bottom <= 2)) );
+        }
+    }
+
+    function isAntiAdblockText( value )
+    {
+        return adblock_pattern.test( value ) && disable_pattern.test( value );
+    }
+
+    function isModalWindows( el )
+    {
+        return isElementFixed ( el ) && ( isAntiAdblockText( el.textContent ) || isBlackoutModal( el ) );
+    }
+
+    // Blocks the possibility of being able to remove the BODY or the HEAD
     function protectCore() {
         if ( is_core_protected ) return;
-        is_core_protected = true;
-        // Protect RemoveChild
-        // Blocks the possibility of being able to remove the BODY or the HEAD
 
-        var $_removeChild = unsafeWindow.Node.prototype.removeChild;
+        if (typeof unsafeWindow === 'undefined') {
+          const unsafeWindow = window;
+        }
+
+        // Protect RemoveChild
+        const $_removeChild = unsafeWindow.Node.prototype.removeChild;
         unsafeWindow.Node.prototype.removeChild = function( node ) {
-            if ( node.nodeName == 'HEAD' || node.parentNode.nodeName == 'HEAD'){
+            if ( node.nodeName == 'HEAD' || (node.parentNode.nodeName == 'HEAD' && !(/META|SCRIPT|STYLE/.test(node.nodeName)) )  ){
                 return debug( 'An attempt to DELETE the element ' + node.nodeName + ' was blocked', node );
             }
             else if ( node.nodeName == 'BODY' ){
@@ -193,70 +280,24 @@
 
         // Protect innerHTML
 
-        var $_innerHTML = unsafeWindow.Node.prototype.innerHTML;
-        unsafeWindow.Node.prototype.innerHTML = function( node ) {
-            if ( node.nodeName == 'BODY' ) {
-                return debug( 'An attempt to CHANGE the content of the element ' + node.nodeName + ' was blocked\n"' + node.textContent+'"' );
-            }
-            $_innerHTML.apply( this, arguments );
-        };
-
-        var $_innerHTML_set = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML').set;
-
+        const $_innerHTML = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
         Object.defineProperty(Element.prototype, 'innerHTML', {
             set: function (value) {
-                if ( this.nodeName == 'BODY' ){
-                    return debug( 'An attempt to CHANGE the content of the element ' + this.nodeName + ' was blocked\n"' + this.textContent+'"\n"' + value + '"' );
+                if ( this.nodeName == 'BODY' || isAntiAdblockText( value ) ){
+                    return debug( 'An attempt to CHANGE the content of the element ' + this.nodeName + ' was blocked\n', value );
                 }
                 //Call the original setter
-                return $_innerHTML_set.call(this, value);
-            }
+                return $_innerHTML.set.call(this, value);
+            },
+            get: function() {
+              return $_innerHTML.get.call(this);
+            },
+            configurable: true
         });
 
         debug( 'Core Protected');
     }
 
-    function isElementBlur( el )
-    {
-        var style = window.getComputedStyle( el );
-        var filter = style.getPropertyValue( 'filter' );
-        return ( (/blur/i).test( filter ) );
-    }
-
-    function isElementFixed( el )
-    {
-        var style = window.getComputedStyle( el );
-        return ( style.getPropertyValue( 'position' ) == 'fixed' );
-    }
-
-    function isOverflowHidden( el )
-    {
-        var style = window.getComputedStyle( el );
-        return ( style.getPropertyValue( 'overflow' ) == 'hidden' );
-    }
-    function isNotHidden( el )
-    {
-        var style = window.getComputedStyle( el );
-        return ( style.getPropertyValue( 'display' ) != 'none' );
-    }
-
-    function isBlackoutModal( el )
-    {
-        var style = window.getComputedStyle( el );
-        var position = style.getPropertyValue( 'position' );
-        var top = parseInt( style.getPropertyValue( 'top' ) );
-        var left = parseInt( style.getPropertyValue( 'left' ) );
-        var right = parseInt( style.getPropertyValue( 'right' ) );
-        var bottom = parseInt( style.getPropertyValue( 'bottom' ) );
-        var zindex = style.getPropertyValue( 'z-index' );
-        if ( isNaN( zindex ) ) zindex = 0;
-        return parseInt( zindex ) > 1 && position == 'fixed' && ( ( el.offsetHeight > window.innerHeight - 50 && el.offsetWidth > window.innerWidth - 20 ) || (top == 0 && left == 0 && right == 0 && bottom == 0) );
-    }
-
-    function isModalWindows( el )
-    {
-        return isElementFixed ( el ) && ( (adblock_pattern.test( el.textContent ) && disable_pattern.test( el.textContent )) || el.tagName == 'IFRAME' );
-    }
 
     function unblockScroll()
     {
@@ -266,10 +307,10 @@
             document.body.classList.add( 'scroll_on' );
             debug( 'Scroll Unblocked from BODY tag');
         }
-        if ( isOverflowHidden( document.htmllTag ) )
+        if ( isOverflowHidden( document.documentElement ) )
         {
-            document.html.setAttribute('style', (document.html.getAttribute('style')||'').replace('overflow: visible !important;','') + 'overflow: visible !important;');
-            document.html.classList.add( 'scroll_on' );
+            document.documentElement.setAttribute('style', (document.documentElement.getAttribute('style')||'').replace('overflow: visible !important;','') + 'overflow: visible !important;');
+            document.documentElement.classList.add( 'scroll_on' );
             debug( 'Scroll Unblocked from HTML tag ');
         }
     }
@@ -277,10 +318,12 @@
     // Main Functions
     function removeBackStuff()
     {
-        document.querySelectorAll( 'div,section' ).forEach( ( el ) => {
+        document.querySelectorAll( 'b,center,div,font,i,iframe,s,span,section,u' ).forEach( ( el ) => {
             if ( isBlackoutModal( el ) )
             {
                 debug( 'Blackout Modal Detected & Removed: ', el);
+                el.removeAttribute('id');
+                el.removeAttribute('class');
                 el.setAttribute('style', (el.getAttribute('style')||'') + ';display: none !important;');
                 el.classList.add( 'hide_modal' );
             }
@@ -298,7 +341,7 @@
         debug( 'Checking Modals' );
         var modalFound = false;
         // Only check common used html tag names
-        document.querySelectorAll( 'div,section,iframe' ).forEach( ( el ) => {
+        document.querySelectorAll( 'b,center,div,font,i,iframe,s,span,section,u' ).forEach( ( el ) => {
             if ( isModalWindows( el ) && isNotHidden( el ) )
             {
                 modalFound = true;
@@ -319,6 +362,9 @@
             //debug( 'Modal already added : ', el );
             return;
         }
+
+        el.removeAttribute('id');
+        el.removeAttribute('class');
 
         // Definde a random class name to hide the element
         // ( so that it is not so easy to detect the class name )
@@ -343,9 +389,10 @@
 
     window.addEventListener('DOMContentLoaded', (event) => {
 
+
         classes.push( getRandomName() );
 
-        document.html = document.getElementsByTagName('html')[0];
+        //document.html = document.getElementsByTagName('html')[0];
 
         // Mutation Observer
         var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
@@ -369,27 +416,33 @@
             });
         });
         // Observer
-        observer.observe(document, {
+        // Observe only the body and its direct descendants
+        observer.observe(document.body, {
             childList : true,
             subtree : true
         });
 
-        // enable context menu again
-        enableContextMenu();
 
         // First check with a little delay
         setTimeout( function() {
+            // check Modals
             checkModals();
-        }, 50 );
+        }, 150 );
 
-        addStyle( 'body.scroll_on, html.scroll_on { overflow: visible !important; } .hide_modal { display: none !important; } .un_blur { -webkit-filter: blur(0px) !important; filter: blur(0px) !important; }' );
+        addStyle( 'body { user-select: auto !important; } body.scroll_on, html.scroll_on { overflow: visible !important; } .hide_modal { display: none !important; } .un_blur { -webkit-filter: blur(0px) !important; filter: blur(0px) !important; }' );
 
     });
 
     window.addEventListener('load', (event) => {
         // Second check, when page is complete loaded ( just in case )
-        checkModals();
+        setTimeout( function() {
+            // enable RightClick again
+            enableRightClick();
+            // check Modals
+            checkModals();
+        }, 1500 );
     });
+
 
     // Protect Core Functions
     protectCore();
